@@ -1,0 +1,292 @@
+//KC03C58A JOB ,'M. JIZAN',MSGCLASS=H
+//*
+//*****************************************************************
+//*                                                               *
+//*  CSCI 465               ASSIGNMENT 4        FALL 2023         *
+//*                                                               *
+//*  DEVELOPER NAME: MILAD JIZAN                                  *
+//*        DUE DATE: 10/11/2023 11:59PM                           *
+//*                                                               *
+//*  PURPOSE: THE PURPOSE OF THIS PROJECT IS TO PRACTICE THE      *
+//*           JCL REQUIRED TO USE THE COBOL COMPILER,             *
+//*           BINDER, AND FETCH & EXICUTE STEPS. THESE STEPS      *
+//*           ARE REQUIRED FOR TAKING COBOL SOURCE CODE AND       *
+//*           MAKING SURE THAT IT CAN BE EXICUTED                 *
+//*           THE COMPILE STEP TURNS THE COBOL SOURCE CODE INTO   *
+//*           A NON-EXICUTABLE OBJECT MODULE. THE BINDER STEP     *
+//*           TAKES THE OBJECT MODULE PRODUCED BY THE COMPILER    *
+//*           AS INPUT AND PRODUCES A PROGRAM OBJECT WHICH IS     *
+//*           EXICUTABLE. FINALLY THE FETCH & EXICUTE STEP        *
+//*           RETRIVES THE PROGRAM OBJECT AND EXICUTES THE        *
+//*           PROGRAM.                                            *
+//*****************************************************************
+//*
+//*****************************************************************
+//*                            JSTEP01:                           *
+//*                                                               *
+//*  JSTEP01: THIS IS THE COBOL COMPILE STEP WHICH EXICUTES       *
+//*           THE PROGRAM: IGYCRCTL, A.K.A., THE COBOL COMPILER.  *
+//*                                                               *
+//*  STEPLIB: BECAUSE THE COBOL COMPILER IS NOT IN THE LNKLST,    *
+//*           THE STEPLIB IS REQUIRED TO PROVIDE IT'S LOCATION.   *
+//*                                                               *
+//*    SYSIN: THIS DD CARD INDICATES THE INSTREAM COBOL PROGRAM   *
+//*           WHICH FOLLOWS IT.                                   *
+//*                                                               *
+//*   SYSLIN: THIS DD CARD TELLS THE SYSTEM WHERE TO STORE THE    *
+//*           OBJECT MODULE THAT RESULTS FROM THE COBOL COMPILER  *
+//*                                                               *
+//* SYSPRINT: THIS DD CARD INDICATES WHERE OUTPUT MESSAGES FROM   *
+//*           THE COBOL COMPILER ARE TO BE WRITTEN.               *
+//*                                                               *
+//*    SYSUT: SYSUT1 - SYSUT15 ARE SCRATCH PADS THAT THE COBOL    *
+//*           COMPILER CAN USE TO DO IT'S JOB. THEY ARE TEMPERARY *
+//*           SPACES WHERE DATA CAN BE WRITTEN DURING COMPOLATION.*
+//*                                                               *
+//* SYSMDECK: A TEMPERARY DATA SET THAT WILL HOLD THE UPDATED     *
+//*           IMPUT SOURCE AFTER LIBRARY PROCESSING.              *
+//*                                                               *
+//*****************************************************************
+//*
+//STEP01   EXEC PGM=IGYCRCTL,REGION=0M
+//*
+//STEPLIB  DD   DSN=IGY630.SIGYCOMP,DISP=SHR
+//         DD   DSN=CEE.SCEERUN,DISP=SHR
+//         DD   DSN=CEE.SCEERUN2,DISP=SHR
+//*
+//SYSIN    DD *
+      ********************************************************
+      *                                                      *
+      * PROGRAM NAME: COBOL3                                 *
+      * PROGRAMMER:   MILAD JIZAN                            *
+      * DUE DATE:     10/11/2023                             *
+      *                                                      *
+      * FUNCTION: THIS PROGRAM READS INPUT DATA RECORDS      *
+      *           AND THEN WRITES THEM TO STANDARD OUTPUT.   *
+      *                                                      *
+      * INPUT: INDATA - THE INPUT DATA RECORDS READ IN.      *
+      *                                                      *
+      * OUTPUT: OUTDATA - THE INPUT DATA RECORDS WRITTEN     *
+      *                   OUT.                               *
+      *                                                      *
+      * NOTES: NONE                                          *
+      *                                                      *
+      ********************************************************
+
+       IDENTIFICATION DIVISION.
+
+       PROGRAM-ID.    SALESRPT.
+       AUTHOR.        MILAD JIZAN
+       DATE-WRITTEN.  10/10/2023.
+       DATE-COMPILED.
+
+       ENVIRONMENT DIVISION.
+
+       INPUT-OUTPUT SECTION.
+
+       FILE-CONTROL.
+
+           SELECT INPUT-FILE ASSIGN TO INDATA.
+           SELECT REPORT-FILE ASSIGN TO RPTDATA.
+
+       DATA DIVISION.
+
+       FILE SECTION.
+
+       FD  INPUT-FILE
+           RECORDING MODE F.
+
+       01  INPUT-RECORD.
+           05  IN-BRANCH-NAME        PIC X(20).
+           05  IN-BROKER-NAME        PIC X(25).
+           05  IN-DEPOSIT-AMOUNT     PIC S9(8)V99.
+           05                        PIC X(25).
+
+       FD  REPORT-FILE
+           RECORDING MODE F
+           BLOCK CONTAINS 20 RECORDS.
+
+       01  REPORT-RECORD             PIC X(132).
+
+       WORKING-STORAGE SECTION.
+      *******************************************************
+      * VARIABLES:                                          *
+      *                                                     *
+      * EOF-FLAG         CHANGED TO 'Y' WHEN END OF FILE    *
+      *                  OCCURS.                            *
+      *                                                     *
+      * RECORD-CTR       RECORD COUNTER COUNTS THE NUMBER   *
+      *                  OF RECORDS.                        *
+      *                                                     *
+      * OUT-BRANCH-NAME  STORES NAME OF THE BRANCH IN AN    *
+      *                  OUTPUT FEILD.                      *
+      *                                                     *
+      * OUT-BROKER-NAME  STORES NAME OF THE BROKER IN AN    *
+      *                  OUTPUT FEILD.                      *
+      *                                                     *
+      * OUT-DEPOSIT-AMOUNT STORES THE DEPOSIT AMOUNT IN AN  *
+      *                    OUTPUT FEILD.                    *
+      *******************************************************
+
+       01  EOF-FLAG                 PIC X     VALUE 'N'.
+
+       01  RECORD-CTR               PIC S9(3)  BINARY SYNC VALUE 0.
+
+       01  DETAIL-LINE.
+           05  OUTPUT-RECORD.
+             10  OUT-BRANCH-NAME      PIC X(20).
+             10  OUT-BROKER-NAME      PIC X(25).
+             10  OUT-DEPOSIT-AMOUNT   PIC $$$,$$$,$$9.99.
+             10  FILLER               PIC X(52)  VALUE SPACES.
+
+       01  TOTALS-LINE.
+           05  FILLER               PIC X(14)  VALUE 'RECORD COUNT: '.
+           05  OUT-RECORD-CTR       PIC ZZ9.
+           05  FILLER               PIC X(115) VALUE SPACES.
+
+       PROCEDURE DIVISION.
+      ***********************************************************
+      *                                                         *
+      *  THIS ROUTINE CONTROLS THE FLOW OF LOGIC TO PROCESS     *
+      *  THE INPUT-FILE AND PRINT ITS CONTENTS TO STANDARD      *
+      *  OUTPUT. IT DOES THIS BY FIRST OPENING INPUT-FILE, THEN *
+      *  IT CALLS THE 0100 SUBROUTINE UNTIL EOF IS REACHED.     *
+      *  FINALLY IT CALLS THE 0200 SUBROUTINE AND CLOSES THE    *
+      *  INPUT-FILE.                                            *
+      *                                                         *
+      ***********************************************************
+
+       0000-MAIN.
+
+           OPEN INPUT  INPUT-FILE
+                OUTPUT REPORT-FILE.
+
+           READ INPUT-FILE
+             AT END MOVE 'Y' TO EOF-FLAG
+           END-READ.
+
+           PERFORM 0100-PROCESS-RECORD
+             UNTIL EOF-FLAG = 'Y'.
+
+           CLOSE INPUT-FILE
+                 REPORT-FILE.
+
+           MOVE 0 TO RETURN-CODE.
+
+           STOP RUN.
+
+       0000-EXIT. EXIT.
+
+      *****************************************************
+      * 0100-PROCESS-RECORD. THIS ROUTINE IS USED TO      *
+      * PROCESS EACH RECORD AND MOVE EACH COMPONENT OF    *
+      * THE INPUT TO IT'S CORRISPONDING OUTPUT VARIABLE   *
+      * IN THE DETAIL LINE. IT THEN PRINTS THE DETAIL LINE*
+      * DOUBLE SPACED. IF EOF IS REACHED, EOF-FLAG IS SET *
+      * TO Y.                                             *
+      *****************************************************
+
+       0100-PROCESS-RECORD.
+
+           ADD 1 TO RECORD-CTR.
+
+           MOVE INPUT-RECORD TO OUTPUT-RECORD.
+           MOVE IN-BRANCH-NAME TO OUT-BRANCH-NAME.
+           MOVE IN-BROKER-NAME TO OUT-BROKER-NAME.
+           MOVE IN-DEPOSIT-AMOUNT TO OUT-DEPOSIT-AMOUNT.
+
+           WRITE REPORT-RECORD FROM DETAIL-LINE AFTER 2.
+
+           READ INPUT-FILE
+             AT END MOVE 'Y' TO EOF-FLAG
+           END-READ.
+
+       0100-EXIT. EXIT.
+/*
+//SYSLIN   DD DSN=&&OBJMOD,
+//            SPACE=(CYL,(1,1)),
+//            DISP=(MOD,PASS,DELETE)
+//*
+//SYSPRINT DD SYSOUT=*
+//*
+//SYSUT1   DD SPACE=(CYL,(1,1))
+//SYSUT2   DD SPACE=(CYL,(1,1))
+//SYSUT3   DD SPACE=(CYL,(1,1))
+//SYSUT4   DD SPACE=(CYL,(1,1))
+//SYSUT5   DD SPACE=(CYL,(1,1))
+//SYSUT6   DD SPACE=(CYL,(1,1))
+//SYSUT7   DD SPACE=(CYL,(1,1))
+//SYSUT8   DD SPACE=(CYL,(1,1))
+//SYSUT9   DD SPACE=(CYL,(1,1))
+//SYSUT10  DD SPACE=(CYL,(1,1))
+//SYSUT11  DD SPACE=(CYL,(1,1))
+//SYSUT12  DD SPACE=(CYL,(1,1))
+//SYSUT13  DD SPACE=(CYL,(1,1))
+//SYSUT14  DD SPACE=(CYL,(1,1))
+//SYSUT15  DD SPACE=(CYL,(1,1))
+//*
+//SYSMDECK DD SPACE=(CYL,(1,1))
+//*
+//*****************************************************************
+//*                            JSTEP02                            *
+//*                                                               *
+//*  JSTEP02: THIS IS THE BINDER STEP WHICH EXICUTES              *
+//*           THE PROGRAM: IEWBLINK, (A.K.A., THE BINDER) IF      *
+//*           JSTEP01 RETURNED 0 WHICH MEANS IT RAN SUCCESSFULLY  *
+//*                                                               *
+//*   SYSLIB: DD INDICATING REQUIRED LIBRARY ROUTINES FOR BINDER  *
+//*                                                               *
+//*   SYSLIN: DD CARD DESCRIBING THE TEMPERARY DATA SET HOLDING   *
+//*           THE OBJECT MODULE BEING TAKEN AS INPUT BY THE       *
+//*           BINDER.                                             *
+//*                                                               *
+//*  SYSLMOD: DD CARD DESCRIBING THE LOCATION TO STORE THE        *
+//*           EXICUTABLE LOAD MODULE PRODUCED BY THE BINDER.      *
+//*                                                               *
+//* SYSPRINT: DD CARD INDICATIONG WHERE MESSAGES FROM THE BINDER  *
+//*           ARE TO BE WRITTEN. IN THIS CASE: STANDARD OUTPUT.   *
+//*                                                               *
+//*****************************************************************
+//*
+//STEP02   EXEC PGM=IEWBLINK,COND=(0,LT)
+//*
+//SYSLIB   DD   DSN=CEE.SCEELKEX,DISP=SHR
+//         DD   DSN=CEE.SCEELKED,DISP=SHR
+//*
+//SYSLIN   DD   DSN=&&OBJMOD,DISP=(MOD,DELETE,DELETE)
+//*
+//SYSLMOD  DD DSN=KC03C58.CSCI465.LOADLIB(ASSIGN3A),
+//            SPACE=(1024,(50,20,1)),DSNTYPE=LIBRARY,
+//            DISP=(MOD,KEEP,KEEP)
+//*
+//SYSPRINT DD SYSOUT=*
+//*
+//*****************************************************************
+//*                            JSTEP03                            *
+//*                                                               *
+//*  JSTEP03: THIS IS THE FETCH AND EXICUTE STEP. IT WILL         *
+//*           FETCH THE LOAD MODULE FROM THE LOADLIB PDSE         *
+//*           AND EXICUTE IT.                                     *
+//*                                                               *
+//*  STEPLIB: THIS DD CARD TELLS THE SYSTEM WHERE TO LOOK         *
+//*           FOR THE LOAD LIBRARY.                               *
+//*                                                               *
+//*   INDATA: THIS DD CARD DESCRIBES THE LOCATION OF THE          *
+//*           DATA SET CONTAINING THE INPUT FOR THE PROGRAM       *
+//*                                                               *
+//*  RPTDATA: THIS DD CARD INDICATES WHERE MESSAGES FROM          *
+//*           THE PROGRAM ARE TO BE WRITTEN IN THIS CASE,         *
+//*           STANDARD OUTPUT.                                    *
+//*                                                               *
+//*****************************************************************
+//*
+//STEP03   EXEC PGM=ASSIGN3A,COND=(0,LT)
+//*
+//STEPLIB  DD DSN=KC03C58.CSCI465.LOADLIB,
+//            DISP=(SHR,KEEP,KEEP)
+//*
+//INDATA   DD DSN=KC02322.CSCI465.DATAFA23(DATA4),
+//            DISP=SHR
+//*
+//RPTDATA  DD SYSOUT=*
+//
